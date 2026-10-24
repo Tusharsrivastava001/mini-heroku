@@ -1,0 +1,64 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Platform Request Rate (req/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(deployforge_http_requests_total[1m])) by (method, status_code)",
+          "legendFormat": "{{method}} {{status_code}}"
+        }
+      ]
+    },
+    {
+      "title": "Active Deployments / Rollouts",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "deployforge_active_deployments",
+          "legendFormat": "Active Workloads"
+        }
+      ]
+    },
+    {
+      "title": "Tenant Pod CPU Utilization",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"df-.*\"}[2m])) by (namespace, pod)",
+          "legendFormat": "{{namespace}} / {{pod}}"
+        }
+      ]
+    },
+    {
+      "title": "Tenant Pod Memory Usage (MB)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"df-.*\"}) by (namespace, pod) / 1024 / 1024",
+          "legendFormat": "{{namespace}} / {{pod}} (MB)"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["deployforge", "kubernetes", "platform"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "DeployForge Platform Overview",
+  "version": 1
+}

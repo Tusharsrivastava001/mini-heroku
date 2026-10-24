@@ -1,0 +1,38 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: deployforge-alerts
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    app.kubernetes.io/name: deployforge
+spec:
+  groups:
+    - name: deployforge.rules
+      rules:
+        - alert: DeployForgeApiHigh5xxRate
+          expr: sum(rate(deployforge_http_requests_total{status_code=~"5.."}[5m])) / sum(rate(deployforge_http_requests_total[5m])) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "DeployForge API 5xx rate exceeded 5%"
+            description: "High error rate detected on API endpoints over the last 5 minutes."
+
+        - alert: TenantPodCrashLooping
+          expr: increase(kube_pod_container_status_restarts_total{namespace=~"df-.*"}[5m]) > 3
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tenant application pod is crashlooping"
+            description: "Pod {{ $labels.pod }} in tenant namespace {{ $labels.namespace }} has restarted multiple times."
+
+        - alert: TenantNearMemoryLimit
+          expr: (container_memory_working_set_bytes{namespace=~"df-.*"} / container_spec_memory_limit_bytes{namespace=~"df-.*"}) > 0.90
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tenant container near OOM threshold"
+            description: "Container {{ $labels.container }} in namespace {{ $labels.namespace }} is using >90% of allocated memory limit."

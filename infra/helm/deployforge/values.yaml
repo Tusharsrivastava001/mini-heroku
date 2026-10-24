@@ -1,0 +1,66 @@
+# Default values for deployforge Helm chart.
+
+global:
+  domain: "localtest.me"
+  environment: "production"
+
+api:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/deployforge/api
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  port: 4000
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+worker:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/deployforge/worker
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+
+dashboard:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/deployforge/dashboard
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  port: 80
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+secrets:
+  jwtSecret: "change_me_super_secret_jwt_key_min32chars"
+  encryptionKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  databaseUrl: "postgresql://deployforge:deployforge_secret@deployforge-postgres:5432/deployforge?schema=public"
+  redisUrl: "redis://deployforge-redis:6379"
+
+ingress:
+  enabled: true
+  className: "traefik"
+  clusterIssuer: "letsencrypt-prod"
+  tls: true
+  dashboardHost: "deployforge.localtest.me"
+  apiHost: "api.localtest.me"
+
+rbac:
+  create: true

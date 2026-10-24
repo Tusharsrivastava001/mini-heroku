@@ -1,0 +1,45 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: deployforge-ingress
+  labels:
+    app.kubernetes.io/name: deployforge
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.className | quote }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  rules:
+    - host: {{ .Values.ingress.dashboardHost | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: deployforge-dashboard
+                port:
+                  number: 80
+    - host: {{ .Values.ingress.apiHost | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: deployforge-api
+                port:
+                  number: 4000
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.dashboardHost | quote }}
+      secretName: deployforge-dashboard-tls
+    - hosts:
+        - {{ .Values.ingress.apiHost | quote }}
+      secretName: deployforge-api-tls
+  {{- end }}
+{{- end }}

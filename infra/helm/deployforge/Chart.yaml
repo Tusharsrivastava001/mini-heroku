@@ -1,0 +1,15 @@
+apiVersion: v2
+name: deployforge
+description: Production-grade Helm chart for DeployForge developer cloud platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - paas
+  - kubernetes
+  - devops
+  - heroku-alternative
+  - platform-engineering
+maintainers:
+  - name: DeployForge Team
+    email: devops@deployforge.io

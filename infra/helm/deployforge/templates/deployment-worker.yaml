@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployforge-worker
+  labels:
+    app.kubernetes.io/name: deployforge
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: deployforge
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: deployforge
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: deployforge-controller
+      containers:
+        - name: worker
+          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: BASE_DOMAIN
+              value: {{ .Values.global.domain | quote }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: deployforge-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: deployforge-secrets
+                  key: REDIS_URL
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}

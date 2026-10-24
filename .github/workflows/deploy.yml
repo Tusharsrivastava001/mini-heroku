@@ -1,0 +1,42 @@
+name: GitOps CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/helm/**'
+      - 'infra/argocd/**'
+
+permissions:
+  id-token: write # Required for AWS OIDC federation
+  contents: read
+
+jobs:
+  deploy-gitops:
+    name: Sync ArgoCD GitOps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Keyless AWS Authentication via GitHub OIDC (No static access keys!)
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        continue-on-error: true # Allows running even before cloud IAM role is configured
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN || 'arn:aws:iam::123456789012:role/DeployForgeGitHubOIDCRole' }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Helm Lint
+        run: helm lint infra/helm/deployforge
+
+      - name: Notify ArgoCD Sync
+        run: |
+          echo "Helm manifests validated."
+          echo "ArgoCD automatically detects changes to 'infra/helm/deployforge' and reconciles cluster state."

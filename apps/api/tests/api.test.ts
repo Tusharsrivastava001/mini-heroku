@@ -29,6 +29,12 @@ describe('DeployForge API Endpoints', () => {
     expect(res.body.error).toContain('Unauthorized');
   });
 
+  it('GET /api/projects/:id/metrics without auth token should return 401 Unauthorized', async () => {
+    const res = await request(app).get('/api/projects/sample-id/metrics');
+    expect(res.status).toBe(401);
+    expect(res.body.error).toContain('Unauthorized');
+  });
+
   it('POST /api/auth/dev-login should create dev user and return token', async () => {
     const res = await request(app)
       .post('/api/auth/dev-login')

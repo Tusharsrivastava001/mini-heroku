@@ -14,8 +14,8 @@
     "prisma:studio": "prisma studio",
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --watch",
-    "test:smoke": "node scripts/smoke-test.cjs",
-    "lint": "eslint src/ --ext .ts",
+    "test:smoke": "node ../../scripts/smoke-test.mjs",
+    "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

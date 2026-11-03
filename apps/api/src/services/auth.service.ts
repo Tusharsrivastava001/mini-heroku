@@ -88,7 +88,7 @@ export class AuthService {
         avatarUrl: `https://avatars.githubusercontent.com/u/1024025?v=4`,
       },
       create: {
-        githubId: 'mock-dev-id-999',
+        githubId: `mock-dev-${username}`,
         username,
         email: `${username}@deployforge.local`,
         avatarUrl: `https://avatars.githubusercontent.com/u/1024025?v=4`,

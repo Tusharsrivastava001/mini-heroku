@@ -17,6 +17,106 @@ This brings up:
 
 ## Local cluster setup (K3d/kind)
 
+### Create local cluster
+
+```bash
+# Create a k3d cluster (default) with Ingress and local registry
+scripts/create-local-cluster.sh k3d
+
+# Or create a kind cluster
+scripts/create-local-cluster.sh kind
+```
+
+The script will:
+- Spin up a single‑node k3d/kind cluster named `deployforge`
+- Expose ports 80/443 on the host
+- Start a local container registry on port 5001
+- Install the NGINX Ingress controller (for both k3d and kind)
+
+### Deploy platform Helm chart
+
+```bash
+helm upgrade --install deployforge ./infra/helm/deployforge \
+  --namespace deployforge --create-namespace
+```
+
+### Verify Ingress controller
+
+```bash
+kubectl get pods -n ingress-nginx
+kubectl get svc -n ingress-nginx
+```
+
+## Deploy a sample app manually
+
+```bash
+# Create a dedicated namespace for the demo app
+kubectl create namespace demo-app
+
+# Deploy the sample app (uses the Docker image from the local registry)
+kubectl apply -f scripts/k8s-manifests/deployment.yaml -n demo-app -l APP_NAME=demo-app,NAMESPACE=demo-app,IMAGE=localhost:5001/sample-node-express:latest,PORT=80
+kubectl apply -f scripts/k8s-manifests/service.yaml -n demo-app -l APP_NAME=demo-app,NAMESPACE=demo-app,PORT=80
+kubectl apply -f scripts/k8s-manifests/ingress.yaml -n demo-app -l APP_NAME=demo-app,NAMESPACE=demo-app,BASE_DOMAIN=localtest.me,PORT=80
+kubectl apply -f scripts/k8s-manifests/hpa.yaml -n demo-app -l APP_NAME=demo-app,NAMESPACE=demo-app,MIN_REPLICAS=1,MAX_REPLICAS=3,TARGET_CPU_PERCENT=80,TARGET_MEMORY_PERCENT=80
+```
+
+### Verify the app is reachable
+
+```bash
+# Should resolve to http://demo-app.localtest.me
+curl http://demo-app.localtest.me
+```
+
+If you see the response from the sample Node.js app, the local cluster and manifests are working.
+
+## Operational checks
+
+```bash
+kubectl get pods -A
+kubectl get deployments -A
+kubectl get ingress -A
+kubectl logs -n deployforge deployforge-api
+```
+
+## Troubleshooting
+
+### Ingress not routing
+
+```bash
+# Ensure the host entry resolves (localtest.me points to 127.0.0.1 by default)
+nslookup demo-app.localtest.me
+
+# Check Ingress resource status
+kubectl describe ingress -n demo-app demo-app-ingress
+```
+
+### Registry errors
+
+```bash
+docker compose logs registry
+curl http://localhost:5001/v2/_catalog
+```
+
+---
+
+## Cloud deployment notes
+
+For AWS, use the Terraform under `infra/terraform` with a single EC2 + K3s node. The default cost assumption is a `t3.medium` instance and remote state in S3 + DynamoDB. See `docs/SETUP_NEEDED.md` for required values and DNS setup.
+
+
+```bash
+make up
+```
+
+This brings up:
+- PostgreSQL on `localhost:5432`
+- Redis on `localhost:6379`
+- Local Docker registry on `localhost:5001`
+- API on `http://localhost:4000`
+- Dashboard on `http://localhost:3000`
+
+## Local cluster setup (K3d/kind)
+
 ### K3d
 
 ```bash

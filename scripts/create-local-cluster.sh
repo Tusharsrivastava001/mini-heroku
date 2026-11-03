@@ -44,13 +44,19 @@ if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
       --agents 1 \
       --port "80:80@loadbalancer" \
       --port "443:443@loadbalancer" \
-      --registry-create "${REGISTRY_NAME}:${REGISTRY_PORT}" \
+      --registry-create "${REGISTRY_NAME}:${REGISTRY_PORT}"\n  # Install Ingress-NGINX controller for k3d\n  echo "🌐 Installing Ingress-NGINX controller for k3d..."\n  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/k3d/deploy.yaml\n  echo "⏳ Waiting for Ingress controller pods to be ready..."\n  kubectl wait --namespace ingress-nginx \\
+    --for=condition=ready pod \\
+    --selector=app.kubernetes.io/component=controller \\
+    --timeout=120s || true \
       --k3s-arg "--disable=traefik@server:0" 2>/dev/null || \
     k3d cluster create "$CLUSTER_NAME" \
       --agents 1 \
       --port "80:80@loadbalancer" \
       --port "443:443@loadbalancer" \
-      --registry-create "${REGISTRY_NAME}:${REGISTRY_PORT}"
+      --registry-create "${REGISTRY_NAME}:${REGISTRY_PORT}"\n  # Install Ingress-NGINX controller for k3d\n  echo "🌐 Installing Ingress-NGINX controller for k3d..."\n  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/k3d/deploy.yaml\n  echo "⏳ Waiting for Ingress controller pods to be ready..."\n  kubectl wait --namespace ingress-nginx \\
+    --for=condition=ready pod \\
+    --selector=app.kubernetes.io/component=controller \\
+    --timeout=120s || true
   fi
 
 elif [[ "$CLUSTER_TYPE" == "kind" ]]; then

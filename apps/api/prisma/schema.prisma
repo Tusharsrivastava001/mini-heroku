@@ -1,144 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions"]
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+// User of the platform
+model User {
+  id        String   @id @default(uuid())
+  githubId  String   @unique
+  username  String   @unique
+  email     String   @unique
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projects  Project[]
+  auditLogs AuditLog[]
+}
+
+// Application project belonging to a user
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  repoUrl     String
+  branch      String   @default("main")
+  envVars     EnvVar[]
+  deployments Deployment[]
+  owner       User     @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Single deployment of a project
+model Deployment {
+  id        String   @id @default(uuid())
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+  imageTag  String
+  status    DeploymentStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum DeploymentStatus {
-  QUEUED
+  PENDING
   BUILDING
   DEPLOYING
   LIVE
   FAILED
-  ROLLED_BACK
 }
 
-enum UserRole {
-  USER
-  ADMIN
+// Environment variables stored as K8s Secrets (also persisted for audit)
+model EnvVar {
+  id        String   @id @default(uuid())
+  key       String
+  value     String
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
 }
 
-model User {
-  id          String      @id @default(uuid())
-  githubId    String?     @unique
-  username    String      @unique
-  email       String?
-  avatarUrl   String?
-  accessToken String?     // Encrypted GitHub OAuth Token
-  role        UserRole    @default(USER)
-  projects    Project[]
-  auditLogs   AuditLog[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  @@index([username])
-}
-
-model Project {
-  id              String                @id @default(uuid())
-  name            String
-  slug            String                @unique
-  description     String?
-  repoUrl         String
-  branch          String                @default("main")
-  rootDirectory   String                @default("/")
-  buildCommand    String?
-  runCommand      String?
-  port            Int                   @default(3000)
-  customDomain    String?               @unique
-  replicasMin     Int                   @default(1)
-  replicasMax     Int                   @default(3)
-  targetCpuPercent Int                  @default(80)
-  
-  userId          String
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  deployments     Deployment[]
-  envVars         EnvironmentVariable[]
-  auditLogs       AuditLog[]
-  
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-
-  @@index([userId])
-  @@index([slug])
-}
-
-model Deployment {
-  id              String            @id @default(uuid())
-  projectId       String
-  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  status          DeploymentStatus  @default(QUEUED)
-  branch          String
-  commitHash      String?
-  commitMessage   String?
-  imageTag        String?
-  liveUrl         String?
-  errorMessage    String?
-  
-  // Rollback lineage tracking
-  rollbackOfId    String?
-  rollbackOf      Deployment?       @relation("DeploymentRollback", fields: [rollbackOfId], references: [id], onDelete: SetNull)
-  rolledBackBy    Deployment[]      @relation("DeploymentRollback")
-  
-  buildStartedAt  DateTime?
-  buildFinishedAt DateTime?
-  deployedAt      DateTime?
-  
-  logs            BuildLog[]
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-
-  @@index([projectId])
-  @@index([status])
-}
-
-model BuildLog {
-  id            String      @id @default(uuid())
-  deploymentId  String
-  deployment    Deployment  @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
-  
-  lineNumber    Int
-  stream        String      @default("stdout") // "stdout" | "stderr" | "system"
-  message       String
-  timestamp     DateTime    @default(now())
-
-  @@index([deploymentId, lineNumber])
-}
-
-model EnvironmentVariable {
-  id              String    @id @default(uuid())
-  projectId       String
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  key             String
-  encryptedValue  String    // AES-256-GCM encrypted
-  isSecret        Boolean   @default(true)
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@unique([projectId, key])
-  @@index([projectId])
-}
-
+// Audit log for actions across the platform
 model AuditLog {
-  id          String    @id @default(uuid())
-  userId      String?
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  projectId   String?
-  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  
-  action      String    // e.g. "PROJECT_CREATED", "DEPLOY_TRIGGERED", "ROLLBACK_TRIGGERED"
-  details     Json?
-  ipAddress   String?
-  createdAt   DateTime  @default(now())
-
-  @@index([userId])
-  @@index([projectId])
-  @@index([createdAt])
+  id        String   @id @default(uuid())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  action    String
+  resource  String
+  timestamp DateTime @default(now())
+  details   Json?
 }

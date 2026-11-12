@@ -30,6 +30,12 @@ export class BuildWorkerService {
     this.redis = new Redis(workerConfig.REDIS_URL, {
       maxRetriesPerRequest: null,
       lazyConnect: true,
+      retryStrategy(times) {
+        return Math.min(times * 500, 5000);
+      },
+    });
+    this.redis.on('error', (err) => {
+      workerLogger.warn(null, `Redis connection error: ${err.message}`);
     });
     this.prisma = new PrismaClient();
   }
@@ -53,6 +59,10 @@ export class BuildWorkerService {
         lockDuration: 300000, // 5 minutes
       }
     );
+
+    this.worker.on('error', (err) => {
+      workerLogger.warn(null, `BullMQ Worker error: ${err.message}`);
+    });
 
     this.worker.on('ready', () => {
       workerLogger.info(null, ' BullMQ Worker ready and listening on build-queue');

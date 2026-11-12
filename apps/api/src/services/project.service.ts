@@ -38,28 +38,33 @@ export class ProjectService {
    * List all projects owned by a user
    */
   async listProjects(userId: string) {
-    return prisma.project.findMany({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        deployments: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: {
-            id: true,
-            status: true,
-            commitHash: true,
-            commitMessage: true,
-            liveUrl: true,
-            createdAt: true,
-            deployedAt: true,
+    try {
+      return await prisma.project.findMany({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          deployments: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              id: true,
+              status: true,
+              commitHash: true,
+              commitMessage: true,
+              liveUrl: true,
+              createdAt: true,
+              deployedAt: true,
+            },
+          },
+          _count: {
+            select: { deployments: true },
           },
         },
-        _count: {
-          select: { deployments: true },
-        },
-      },
-    });
+      });
+    } catch (error) {
+      logger.warn(`PostgreSQL query failed in listProjects: ${(error as Error).message}`);
+      return [];
+    }
   }
 
   /**

@@ -77,3 +77,20 @@ export interface ProjectMetricPoint {
   cpuPercent: number;
   memoryMb: number;
 }
+
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  plan: 'Hobby' | 'Pro' | 'Enterprise';
+  clusterRegion: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: 'success' | 'info' | 'warning' | 'error';
+  timestamp: string;
+  read: boolean;
+}
